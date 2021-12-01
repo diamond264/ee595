@@ -4,7 +4,7 @@ import json
 import time
 
 from google.oauth2 import service_account
-from google.auth.transport.requests import AuthorizedSession
+from google.auth.transport.requests import AuthorizedSession, Request
 
 # database metadata
 firebase_db = 'https://ee595-c30a7-default-rtdb.asia-southeast1.firebasedatabase.app/'
@@ -46,6 +46,11 @@ def loop(time_interval=1, max_datasize=10):
     # Authenticate a credential with the service account
     credentials = service_account.Credentials.from_service_account_file(
         "api_key.json", scopes=scopes)
+    request = Request()
+    credentials.refresh(request)
+    access_token = credentials.token
+    print(f'access_token\n{access_token}')
+    with open("access.token", "w") as f: f.write(access_token)
 
     # Use the credentials object to authenticate a Requests session.
     authed_session = AuthorizedSession(credentials)

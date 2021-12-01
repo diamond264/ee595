@@ -1,0 +1,17 @@
+{
+	"name": "EE595 Youtube Screen Manipulator",
+	"description": "Extension for our project",
+	"version": "1.0",
+	"manifest_version": 2,
+	"content_scripts": [
+		{
+			"matches": ["https://*.youtube.com/watch*"],
+			"js": ["js/contentScript.js"]
+		}
+	],
+	"background": {
+		// "page": "background.html"
+		"service_worker": "js/background.js",
+		"type": "module"
+	}
+}
