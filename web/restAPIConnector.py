@@ -49,7 +49,7 @@ def gen_data_from_data(sensor_data, phone_data, web_link):
 
     video_time = int(video_link.split('?t=')[1])
     web_time = int(web_link.split('?t=')[1])
-    if video_time > web_time: link = web_link
+    if video_time < web_time: link = web_link
 
     sensor_pos = np.array([sensor_loc_x, sensor_loc_y])
     phone_pos = np.array([phone_loc_x, phone_loc_y])
