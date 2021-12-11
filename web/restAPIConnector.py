@@ -86,8 +86,8 @@ def gen_data_from_data(sensor_data, phone_data, web_link):
     if pitch_to_monitor > 180: pitch_to_monitor = 360 - pitch_to_monitor
 
     direction = 'up'
-    if sensor_ori_roll > 90: direction = 'left'
-    if sensor_ori_roll < -90: direction = 'right'
+    if sensor_ori_roll > 45: direction = 'left'
+    if sensor_ori_roll < -45: direction = 'right'
 
     summary = {}
     if pitch_to_monitor > pitch_to_phone:
@@ -95,7 +95,7 @@ def gen_data_from_data(sensor_data, phone_data, web_link):
             "attention": "phone",
             "distance": dis_sensor_phone,
             "direction": direction,
-            "last_link": video_link,
+            "last_link": link,
             "timestamp": {
                 ".sv": "timestamp"
             }
@@ -105,7 +105,7 @@ def gen_data_from_data(sensor_data, phone_data, web_link):
             "attention": "monitor",
             "distance": dis_sensor_monitor,
             "direction": direction,
-            "last_link": video_link,
+            "last_link": link,
             "timestamp": {
                 ".sv": "timestamp"
             }
