@@ -14,15 +14,16 @@ function myLoop() {
 			var video = document.getElementsByClassName('video-stream html5-main-video')[0];
 			if (response.attention === 'monitor') {
 				if (video.paused) {
-					if (response.last_link != '') {
-						var video_link = response.last_link.split('?t=')[0];
-						var sec_link = response.last_link.split('?t=')[1];
-						if (video_link === document.URL)
-							video.currentTime = parseFloat(sec_link);
+					if (response.last_link_from_phone != '') {
+						// var video_link = response.last_link.split('?t=')[0];
+						// var sec_link = response.last_link.split('?t=')[1];
+						window.location.href = response.last_link_from_phone;
+						// if (video_link === document.URL)
+						// 	video.currentTime = parseFloat(sec_link);
 					}
 					video.play();
 				}
-				if (response.distance > 43) {
+				if (response.distance > 50) {
 					scale = 2;
 				}
 

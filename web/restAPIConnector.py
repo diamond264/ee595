@@ -62,14 +62,15 @@ def gen_summary_from_data(sensor_data, phone_data, web_link):
     phone_loc_y = 0 # phone_data[1]
     # phone_loc_z = phone_data[2]
 
-    video_link = phone_data[3]
-    link = video_link
+    video_link = phone_data[3].split("?t=")[0]
+    video_link += "?t="+str(int(phone_data[4]))
+    # link = video_link
 
-    if video_link != "" and len(video_link.split('?t=')) > 1:
-        video_time = int(video_link.split('?t=')[1])
-    else: video_time = 10000
-    web_time = int(web_link.split('?t=')[1])
-    if video_time < web_time: link = web_link
+    # if video_link != "" and len(video_link.split('?t=')) > 1:
+    #     video_time = int(video_link.split('?t=')[1])
+    # else: video_time = 10000
+    # web_time = int(web_link.split('?t=')[1])
+    # if video_time < web_time: link = web_link
 
     sensor_pos = np.array([sensor_loc_x, sensor_loc_y])
     phone_pos = np.array([phone_loc_x, phone_loc_y])
@@ -116,7 +117,8 @@ def gen_summary_from_data(sensor_data, phone_data, web_link):
             "attention": "phone",
             "distance": dis_sensor_phone,
             "direction": direction,
-            "last_link": link,
+            "last_link": web_link,
+            "last_link_from_phone": video_link,
             "timestamp": {
                 ".sv": "timestamp"
             }
@@ -126,7 +128,8 @@ def gen_summary_from_data(sensor_data, phone_data, web_link):
             "attention": "monitor",
             "distance": dis_sensor_monitor,
             "direction": direction,
-            "last_link": link,
+            "last_link": web_link,
+            "last_link_from_phone": video_link,
             "timestamp": {
                 ".sv": "timestamp"
             }
@@ -237,7 +240,7 @@ def phone_orientation_callback(sender, data):
 
     uri = data[1].split(' ')
     global phone_data
-    phone_data = (numbers[3], numbers[4], numbers[5], uri[0], float(uri[1]) if uri[1] else -1)
+    phone_data = (numbers[3], numbers[4], numbers[5], uri[0], float(uri[1]) if uri[1] and uri[1] != "null" else -1)
     # print("Received data in bytearray: {}".format(data))
     # print("Received data in float: {}".format(struct.unpack('f', data[1:5])[0])) # Field struct is 5-byte long, where the first byte is the "flag" field.
 
