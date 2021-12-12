@@ -18,6 +18,7 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.os.Binder;
 import android.os.IBinder;
 import android.content.Intent;
 import android.util.Log;
@@ -68,7 +69,7 @@ public class YoutubeService extends Service implements ServiceFragmentDelegate {
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 if (newState == BluetoothGatt.STATE_CONNECTED) {
                     mBluetoothDevices.add(device);
-                    mAdvertiser.stopAdvertising(mAdvCallback);
+                    // mAdvertiser.stopAdvertising(mAdvCallback);
                     Log.v(TAG, "Connected to device: " + device.getAddress());
                 } else if (newState == BluetoothGatt.STATE_DISCONNECTED) {
                     mBluetoothDevices.remove(device);
@@ -289,7 +290,7 @@ public class YoutubeService extends Service implements ServiceFragmentDelegate {
                         .fromString("00002A19-0000-1000-8000-00805f9b34fb"));
 
                 float[] send_arr = new float[]{orientationAngles[0], orientationAngles[1], orientationAngles[2], (float) x*100, (float) y*100, (float) z*100};
-                curCharacteristic.setValue(Arrays.toString(send_arr));
+                curCharacteristic.setValue(Arrays.toString(send_arr) + ";" + HTMLvalue.getURL() + " " + HTMLvalue.getTime());
                 sendNotificationToDevices(curCharacteristic);
 
 
@@ -313,10 +314,17 @@ public class YoutubeService extends Service implements ServiceFragmentDelegate {
         }
     };
 
+    IBinder mBinder = new LocalBinder();
 
     @Override
     public IBinder onBind(Intent intent){
-        return null;
+        return mBinder;
+    }
+
+    public class LocalBinder extends Binder {
+        public YoutubeService getServerInstance(){
+            return YoutubeService.this;
+        }
     }
 
     @Override

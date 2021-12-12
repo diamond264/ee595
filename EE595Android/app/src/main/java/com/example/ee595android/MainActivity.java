@@ -17,13 +17,16 @@ import android.bluetooth.le.AdvertiseCallback;
 import android.bluetooth.le.AdvertiseData;
 import android.bluetooth.le.AdvertiseSettings;
 import android.bluetooth.le.BluetoothLeAdvertiser;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.util.Log;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebSettings;
@@ -38,6 +41,8 @@ import java.util.HashSet;
 import java.util.UUID;
 import java.net.URL;
 
+import com.example.ee595android.YoutubeService.LocalBinder;
+
 import com.example.ee595android.ServiceFragment.ServiceFragmentDelegate;
 
 
@@ -45,8 +50,29 @@ public class MainActivity extends AppCompatActivity {
 
     private WebView mWebView;
     private WebSettings mWebSettings;
-    Intent service;
+    Intent mIntent;
     URL url;
+    boolean mBounded;
+    YoutubeService mService;
+
+    ServiceConnection mConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
+            mBounded = true;
+            LocalBinder mLocalBinder = (LocalBinder) iBinder;
+            mService = mLocalBinder.getServerInstance();
+            Log.d("BIND","BIND");
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName componentName) {
+            mBounded = false;
+            mService = null;
+            Log.d("BIND", "UNBIND");
+        }
+    };
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -57,12 +83,13 @@ public class MainActivity extends AppCompatActivity {
 
         if(message == null){
             Log.d("EE595B", "started by hand");
-            service = new Intent(
+            mIntent = new Intent(
                     getApplicationContext(),
                     YoutubeService.class
             );
 
-            startService(service);
+            // startService(service);
+            bindService(mIntent, mConnection, BIND_AUTO_CREATE);
         }
         else{
             message = message.replace("watch?v=", "v/");
@@ -78,10 +105,19 @@ public class MainActivity extends AppCompatActivity {
                     Log.d("EE595_HTML", url);
                 }
                 @Override
+                public void onLoadResource(WebView view, String url){
+                    super.onLoadResource(view, url);
+                    view.loadUrl("javascript:window.HtmlViewer.setTime" +
+                            "(String(parseInt(document.getElementsByClassName('video-stream html5-main-video')[0].currentTime)));");
+                    view.loadUrl("javascript:window.HtmlViewer.setURL" +
+                            "(document.URL);");
+                }
+                @Override
                 public void onPageFinished(WebView view, String url){
-
-                    mWebView.loadUrl("javascript:window.HtmlViewer.showHTML" +
-                            "('<html>'+document.getElementsByTagName('html')[0].innerHTML+'</html>');");
+                    view.loadUrl("javascript:window.HtmlViewer.setTime" +
+                            "(String(parseInt(document.getElementsByClassName('video-stream html5-main-video')[0].currentTime)));");
+                    view.loadUrl("javascript:window.HtmlViewer.setURL" +
+                            "(document.URL);");
                 }
             });
 
@@ -97,7 +133,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        stopService(service);
+        // stopService(service);
     }
 
     public class HtmlInterface {
@@ -108,11 +144,13 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @JavascriptInterface
-        public void showHTML(String html){
-            boolean really = html.contains("ytp-time-current");
-            Log.d("EE595_HTML", html);
-            Log.d("EE595_HTML", really+"");
+        public void setTime(String time){
+            HTMLvalue.setTime(time);
+        }
 
+        @JavascriptInterface
+        public void setURL(String URL){
+            HTMLvalue.setURL(URL);
         }
     }
 

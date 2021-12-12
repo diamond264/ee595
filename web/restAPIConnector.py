@@ -3,6 +3,9 @@ import requests
 import json
 import time
 import asyncio
+from bleak import BleakScanner, BleakClient
+import struct
+
 
 import numpy as np
 
@@ -21,11 +24,14 @@ scopes = [
   "https://www.googleapis.com/auth/firebase.database"
 ]
 
+global sensor_data
+global phone_data
+
 def get_data_from_sensor():
-    return -1
+    return sensor_data
 
 def get_data_from_phone():
-    return -1
+    return phone_data
 
 def get_data_from_web(authed_session):
     response = authed_session.get(firebase_db+link_table+J)
@@ -151,7 +157,7 @@ def get_oldest_key(dict_data):
     return min_key
 
 
-async def loop(time_interval=1, max_datasize=10):
+async def main_loop(time_interval=1, max_datasize=10):
     # Authenticate a credential with the service account
     credentials = service_account.Credentials.from_service_account_file(
         "api_key.json", scopes=scopes)
@@ -195,5 +201,121 @@ async def loop(time_interval=1, max_datasize=10):
         await asyncio.sleep(time_interval)
 
 
-if __name__ == "__main__":
-    asyncio.run(loop())
+loop = asyncio.get_event_loop()
+
+# Scan all peripherals
+# loop.run_until_complete(discover())
+
+# After scanning, change the address to the appropriate value
+# The Arduino device will be displayed with locally assigned name
+# address = "EFABA2D7-2ED9-4888-B387-7B2370184FF2" # set your address here
+
+# Standard BLE/Bluetooth UUID is 128-bit long
+# Among them, below formats are specified/reserved by the standard 16-bit UUID assignments
+uuid_extend = lambda uuid_16: "0000" + uuid_16 + "-0000-1000-8000-00805f9b34fb"
+
+# Simple print callback for the "notify" event of the "Intermediate Temperature Characteristic"
+def phone_orientation_callback(sender, data):
+    data = data.decode().split(';')
+    numbers = data[0].strip()[1:-1].split(',')
+    numbers = [float(i.strip()) for i in numbers]
+
+    uri = data[1].split(' ')
+    print('URI : '+ uri[0])
+    print('TIME : '+ uri[1])
+
+    phone_data = (numbers[3], numbers[4], numbers[5], uri[0], float(uri[1]))
+    # print("Received data in bytearray: {}".format(data))
+    # print("Received data in float: {}".format(struct.unpack('f', data[1:5])[0])) # Field struct is 5-byte long, where the first byte is the "flag" field.
+
+
+def arduino_orientation_callback(sender, data):
+    yaw = struct.unpack('f', data[1:5])[0]
+    roll = struct.unpack('f', data[5:9])[0]
+    pitch = struct.unpack('f', data[9:13])[0]
+    #print('arduino orientation : ', end = "")
+    #print(yaw, roll, pitch)
+
+def arduino_location_callback(sender, data):
+    x = struct.unpack('f', data[1:5])[0]
+    y = struct.unpack('f', data[5:9])[0]
+    z = struct.unpack('f', data[9:13])[0]
+    pitch = struct.unpack('f', data[13:17])[0]
+    yaw = struct.unpack('f', data[17:21])[0]
+    roll = struct.unpack('f', data[21:25])[0]
+
+    sensor_data = [x, y, z, pitch, yaw, roll]
+
+    #print('arduino location : ', end = "")
+    #print(x, y, z)
+# Main asynchronous function, with target address
+async def run():
+    client_device = None
+    found_flag = False
+    while(not found_flag):
+        devices = await BleakScanner.discover()
+        for d in devices:
+            print(d)
+            if "EE595B_Phone" in d.name:
+                client_device = d
+                print("Found!!  ")
+                found_flag = True
+                break
+
+    print("Trying to connect...")
+    async with BleakClient(client_device, use_cached=False, timeout=50.0) as client:
+        print("Connected to {}".format(client_device))
+        # device_name = await client.read_gatt_char(uuid_extend("2A00"))
+        # appearance = await client.read_gatt_char(uuid_extend("2A01"))
+        # print("Device name: {}".format(device_name))
+        # print("Appearance: {}".format(appearance))
+
+        # Set the "notify" event handler
+        # Handler will be called when the "peripheral"(server) "notify" the data
+        # await client.start_notify(uuid_extend("2A18"), phone_html_callback)
+        await client.start_notify(uuid_extend("2A19"), phone_orientation_callback)
+
+        send_flag = True
+        # Make the main function loop forever to continuously monitor the data
+        while client.is_connected:
+            if send_flag:
+                data = 'https://www.youtube.com/watch?v=axBw_aWCulg'
+                await client.write_gatt_char(uuid_extend("2A20"),bytes(data, 'utf-8'))
+                send_flag = False
+            await asyncio.sleep(1)
+
+async def runArduino():
+    client_device = None
+    found_flag = False
+    while(not found_flag):
+        devices = await BleakScanner.discover()
+        for d in devices:
+            print(d)
+            if "EE595B_Arduino" in d.name:
+                client_device = d
+                print("Found!!  ")
+                found_flag = True
+                break
+
+    print("Trying to connect...")
+    async with BleakClient(client_device, use_cached=False, timeout=30.0) as client:
+        print("Connected to {}".format(client_device))
+
+        # For tutorial purpose -- list all services installed
+        # Should print out "Generic Access Profile", "Generic Attribute Profile", and the user-installed standard service "Health Thermometer"
+
+        # Set the "notify" event handler
+        # Handler will be called when the "peripheral"(server) "notify" the data
+        # await client.start_notify(uuid_extend("2A1E"), arduino_orientation_callback)
+        await client.start_notify(uuid_extend("2A1C"), arduino_location_callback)
+
+        # Make the main function loop forever to continuously monitor the data
+        while client.is_connected:
+            await asyncio.sleep(1)
+
+
+#tasks = asyncio.gather(runArduino())
+sensor_data = []
+phone_data = []
+tasks = asyncio.gather(run(), runArduino(), main_loop())
+loop.run_until_complete(tasks)
