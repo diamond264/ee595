@@ -2,6 +2,7 @@
 import requests
 import json
 import time
+import asyncio
 
 import numpy as np
 
@@ -10,6 +11,7 @@ from google.auth.transport.requests import AuthorizedSession, Request
 
 # database metadata
 firebase_db = 'https://ee595-c30a7-default-rtdb.asia-southeast1.firebasedatabase.app/'
+link_table = 'linkdata'
 sdata_table = 'sdata'
 J = '.json'
 
@@ -24,6 +26,13 @@ def get_data_from_sensor():
 
 def get_data_from_phone():
     return -1
+
+def get_data_from_web(authed_session):
+    response = authed_session.get(firebase_db+link_table+J)
+    if response.status_code != 200: print("GET failed")
+    resp_data = response.json()
+    
+    return resp_data['url']
 
 def gen_data_from_data(sensor_data, phone_data, web_link):
     # sensor, phone default orientation / location -> (0,0,0) / (0,0,0)
@@ -129,8 +138,8 @@ def gen_sample_summary():
 
     return json.dumps(sdata)
 
-
 def get_oldest_key(dict_data):
+    if dict_data == None: return None
     keys = list(dict_data.keys())
     min_key = keys[0]
     min_timestamp = dict_data[min_key]["timestamp"]
@@ -142,7 +151,7 @@ def get_oldest_key(dict_data):
     return min_key
 
 
-def loop(time_interval=1, max_datasize=10):
+async def loop(time_interval=1, max_datasize=10):
     # Authenticate a credential with the service account
     credentials = service_account.Credentials.from_service_account_file(
         "api_key.json", scopes=scopes)
@@ -158,11 +167,11 @@ def loop(time_interval=1, max_datasize=10):
     while True:
         sensor_data = get_data_from_sensor()
         phone_data = get_data_from_phone()
-        web_link = get_data_from_web() # get latest link from the web
+        web_link = get_data_from_web(authed_session) # get latest link from the web
 
-        summary = gen_summary_from_data(sensor_data, phone_data, web_link)
-
+        # summary = gen_summary_from_data(sensor_data, phone_data, web_link)
         summary = gen_sample_summary()
+
         response = authed_session.get(firebase_db+sdata_table+J)
         if response.status_code != 200: print("GET failed")
         
@@ -182,8 +191,8 @@ def loop(time_interval=1, max_datasize=10):
         send_data_to_phone(summary)
         
         print(resp_data)
-        time.sleep(time_interval)
+        await asyncio.sleep(time_interval)
 
 
 if __name__ == "__main__":
-    loop()
+    asyncio.run(loop())

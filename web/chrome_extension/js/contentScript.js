@@ -42,8 +42,7 @@ function myLoop() {
 			}
 
 			var url = document.URL;
-			var cur_time = document.getElementsByClassName('ytp-time-current')[0].textContent;
-			var sec = (+cur_time.split(':')[0])*60+(+cur_time.split(':')[1]);
+			var sec = String(parseInt(video.currentTime));
 			var url_with_time = url+'?t='+sec
 			console.log(url+'?t='+sec);
 
@@ -55,7 +54,7 @@ function myLoop() {
 		if (cnt < cnt_limit) {
 			myLoop();
 		}
-	}, 2000)
+	}, 5000)
 }
 
 myLoop();

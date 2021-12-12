@@ -4,47 +4,47 @@ var linkdata = "linkdata";
 var J = ".json";
 
 // test code
-fetch('access.token')
-			.then(response => response.text())
-			.then(access_token => {
-				var auth = "?access_token="+access_token;
+// fetch('access.token')
+// 	.then(response => response.text())
+// 	.then(access_token => {
+// 		var auth = "?access_token="+access_token;
 
-				fetch(db+sdata+J+auth)
-					.then(response => response.json())
-					.then(data => {
-						var min_key = "";
-						var min_ts = 0;
-						var keys = Object.keys(data);
+// 		fetch(db+sdata+J+auth)
+// 			.then(response => response.json())
+// 			.then(data => {
+// 				var min_key = "";
+// 				var min_ts = 0;
+// 				var keys = Object.keys(data);
 
-						if (keys.length > 0) {
-							min_key = keys[0];
-							min_ts = data[min_key]['timestamp'];
-						}
+// 				if (keys.length > 0) {
+// 					min_key = keys[0];
+// 					min_ts = data[min_key]['timestamp'];
+// 				}
 
-						for (var i=0; i<keys.length; i++) {
-							var key = keys[i];
-							if (min_ts > data[key]['timestamp']) {
-								min_key = key;
-								min_ts = data[key]['timestamp'];
-							}
-						}
+// 				for (var i=0; i<keys.length; i++) {
+// 					var key = keys[i];
+// 					if (min_ts > data[key]['timestamp']) {
+// 						min_key = key;
+// 						min_ts = data[key]['timestamp'];
+// 					}
+// 				}
 
-						console.log(data[min_key]);
-						// SendResponse(data[min_key]);
-					});
-				});
+// 				console.log(data[min_key]);
+// 				// SendResponse(data[min_key]);
+// 			});
+// 		});
 
-fetch('access.token')
-	.then(response => response.text())
-	.then(access_token => {
-		var auth = "?access_token="+access_token;
+// fetch('access.token')
+// 	.then(response => response.text())
+// 	.then(access_token => {
+// 		var auth = "?access_token="+access_token;
 
-		fetch(db+linkdata+J+auth, {
-			method: "POST",
-			headers: {"Content-Type": "application/json"},
-			body: JSON.stringify({url: "youtube.com"})
-		}).then(response => console.log(response));
-	});
+// 		fetch(db+linkdata+J+auth, {
+// 			method: "POST",
+// 			headers: {"Content-Type": "application/json"},
+// 			body: JSON.stringify({url: "youtube.com"})
+// 		}).then(response => console.log(response));
+// 	});
 
 chrome.runtime.onMessage.addListener(
 	(request, sender, sendResponse) => {
@@ -62,35 +62,36 @@ chrome.runtime.onMessage.addListener(
 				fetch(db+sdata+J+auth)
 					.then(response => response.json())
 					.then(data => {
-						var min_key = "";
-						var min_ts = 0;
+						var max_key = "";
+						var max_ts = 0;
 						var keys = Object.keys(data);
 
 						if (keys.length > 0) {
-							min_key = keys[0];
-							min_ts = data[min_key]['timestamp'];
+							max_key = keys[0];
+							max_ts = data[max_key]['timestamp'];
 						}
 
 						for (var i=0; i<keys.length; i++) {
 							var key = keys[i];
-							if (min_ts > data[key]['timestamp']) {
-								min_key = key;
-								min_ts = data[key]['timestamp'];
+							if (max_ts > data[key]['timestamp']) {
+								max_key = key;
+								max_ts = data[key]['timestamp'];
 							}
 						}
 
-						console.log(data[min_key]);
-						SendResponse(data[min_key]);
+						console.log(data[max_key]);
+						console.log("SENT HERE");
+						sendResponse(data[max_key]);
 					});
 				});
 
 		// test code
 		// Random directions/distances
-		var directions = ['up', 'right', 'left'];
-		var distances = [1, 3];
-		var dir = directions[Math.floor(Math.random() * directions.length)];
-		var dis = distances[Math.floor(Math.random() * distances.length)]
-		sendResponse({distance: dis, direction: dir, attention: 'monitor'});
+		// var directions = ['up', 'right', 'left'];
+		// var distances = [1, 3];
+		// var dir = directions[Math.floor(Math.random() * directions.length)];
+		// var dis = distances[Math.floor(Math.random() * distances.length)]
+		// sendResponse({distance: dis, direction: dir, attention: 'monitor'});
 	}
 
 	if (request.type === 'sendUrl') {
@@ -102,10 +103,12 @@ chrome.runtime.onMessage.addListener(
 				var auth = "?access_token="+access_token;
 
 				fetch(db+linkdata+J+auth, {
-					method: "POST",
+					method: "PUT",
 					headers: {"Content-Type": "application/json"},
-					body: JSON.stringify({url: timed_url})
+					body: JSON.stringify({url: timed_url, timestamp: new Date().valueOf()})
 				}).then(response => console.log(response));
 			});
 	}
+
+	return true;
 });
