@@ -118,6 +118,8 @@ public class YoutubeService extends Service implements ServiceFragmentDelegate {
             try {
                 JSONObject obj = new JSONObject(summary);
                 boolean new_attention = obj.getString("attention").equals("phone");
+                Log.d("OLD_ATTENTION", attention+"");
+                Log.d("NEW_ATTENTION", new_attention+"");
                 String link = obj.getString("last_link");
                 if(!attention && new_attention){
                     attention = true;

@@ -111,9 +111,11 @@ public class MainActivity extends AppCompatActivity {
                             "(String(parseInt(document.getElementsByClassName('video-stream html5-main-video')[0].currentTime)));");
                     view.loadUrl("javascript:window.HtmlViewer.setURL" +
                             "(document.URL);");
+                    Log.d("PLAY", HTMLvalue.getPlay()+"");
                     if(!HTMLvalue.getPlay()){
                         view.loadUrl("javascript:window.HtmlViewer.stopPlay" +
-                                "(document.getElementsByClassName(‘video-stream html5-main-video’)[0].pause());");
+                                "(document.getElementsByClassName('video-stream html5-main-video')[0].pause());");
+                        Log.d("Play_STOPPED", HTMLvalue.getPlay()+"");
                         HTMLvalue.setPlay(true);
                     }
                 }
