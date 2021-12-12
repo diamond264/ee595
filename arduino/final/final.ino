@@ -40,17 +40,15 @@ unsigned long microTime_old, microTime, microTime_delta;
 
 float gx, gy, gz;
 float rotate_x, rotate_y, rotate_z;
-double vx, vy, vz;
-double vx_add, vy_add, vz_add;
-double pos_vx, pos_vy, pos_vz;
-double x, y, z;
-double accum_x, accum_y, accum_z;
-double accum_gx, accum_gy, accum_gz;
+float vx, vy, vz;
+float vx_add, vy_add, vz_add;
+float pos_vx, pos_vy, pos_vz;
+float x, y, z;
 int n;
 float ax, ay, az;
 float ax_offset, ay_offset, az_offset;
-double ax_temp, ay_temp, az_temp;
-const double rotate_coeff = 1000000 * (2*PI/360);
+float ax_temp, ay_temp, az_temp;
+const float rotate_coeff = 1000000 * (2*PI/360);
 
 float accAngleX = 0, accAngleY = 0, gyroAngleX = 0, gyroAngleY = 0, gyroAngleZ = 0;
 float roll, pitch, yaw; 
@@ -77,8 +75,8 @@ void setup() {
   BLE.setEventHandler(BLEDisconnected, blePeripheralDisconnectHandler);
   
   // Set "Generic Access Profile" characteristics  
-  BLE.setLocalName("EE595_Arduino");
-  BLE.setDeviceName("EE595_Arduino"); // UUID 2A00
+  BLE.setLocalName("EE595B_Arduino");
+  BLE.setDeviceName("EE595B_Arduino"); // UUID 2A00
   BLE.setAppearance(0x0543); // UUID 2A01
 
   
@@ -146,10 +144,19 @@ void loop() {
       
       IMU.readAccelerationGyroMultiple(ax, ay, az, gx, gy, gz, n);
 
+      gx = gx - 2.6;
+      gy = gy + 14;
+      gz = gz - 0.75;
+      
       ax = -ax;
       gx = -gx;
+
+      ax -= ax_offset;
+      ay -= ay_offset;
+      az -= az_offset;
+      
       accAngleX = (atan(ay / sqrt(pow(ax, 2) + pow(az, 2))) * 180 / PI);
-      accAngleY = (atan(-1 * ax / sqrt(pow(ay, 2) + pow(az, 2))) * 180 / PI);
+      accAngleY = (atan(ax / sqrt(pow(ay, 2) + pow(az, 2))) * 180 / PI);
 
       gyroAngleX = gyroAngleX + gx * microTime_delta / rotate_coeff;
       gyroAngleY = gyroAngleY + gy * microTime_delta / rotate_coeff;
@@ -186,10 +193,6 @@ void loop() {
     //  az = az_temp;
     
       
-      ax -= ax_offset;
-      ay -= ay_offset;
-      az -= az_offset;
-      
     
       vx_add = 4.9 * ax * microTime_delta / 1000000.0;
       vy_add = 4.9 * ay * microTime_delta / 1000000.0;
@@ -223,10 +226,6 @@ void loop() {
           rotate_y = 0;
           rotate_z = 0;
 
-          gyroAngleX = 0;
-          accAngleX = 0;
-          gyroAngleY = 0;
-          accAngleY = 0;
           gz = 0;
         }
       else if (thres > 30000)
@@ -252,23 +251,23 @@ void loop() {
       y = y + pos_vy * microTime_delta / 1000000.0;
       z = z + pos_vz * microTime_delta / 1000000.0;
 
-      *(float*)&orm.orientation[0] = (float)yaw;
-      *(float*)&orm.orientation[4] = (float)roll;
-      *(float*)&orm.orientation[8] = (float)pitch;
+      *(float*)&orm.orientation[0] = (float)yaw / 56;
+      *(float*)&orm.orientation[4] = (float)roll / 56;
+      *(float*)&orm.orientation[8] = (float)pitch / 56;
 
-      *(float*)&loc.location[0] = (float)x;
-      *(float*)&loc.location[4] = (float)y;
-      *(float*)&loc.location[8] = (float)z;
+      *(float*)&loc.location[0] = (float)x*100;
+      *(float*)&loc.location[4] = (float)y*100;
+      *(float*)&loc.location[8] = (float)z*100;
 
       LocationMeasurementChar.writeValue((uint8_t*)&loc, sizeof(loc));
       OrientationMeasurementChar.writeValue((uint8_t*)&orm, sizeof(orm));
   
   
-    Serial.print(yaw);
+    Serial.print(yaw/56);
     Serial.print('\t');
-    Serial.print(roll);
+    Serial.print(roll/56);
     Serial.print('\t');
-    Serial.println(pitch);
+    Serial.println(pitch/56);
   
       // Serial.println(y*100);
     }
