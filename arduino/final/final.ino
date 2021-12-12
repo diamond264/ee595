@@ -3,7 +3,7 @@
 /* Bluetooth */
 typedef struct LocationMeasurement {
   byte flag = 0b00000000; // Refer to the "GATT Specification Supplement" for more detail
-  byte location[12]; // Byte-array used instead of float, to resolve 4-byte aligning issue
+  byte location[24]; // Byte-array used instead of float, to resolve 4-byte aligning issue
 } LocationMeasurement;
 LocationMeasurement loc;
 
@@ -251,23 +251,26 @@ void loop() {
       y = y + pos_vy * microTime_delta / 1000000.0;
       z = z + pos_vz * microTime_delta / 1000000.0;
 
-      *(float*)&orm.orientation[0] = (float)yaw / 56;
-      *(float*)&orm.orientation[4] = (float)roll / 56;
-      *(float*)&orm.orientation[8] = (float)pitch / 56;
+      //*(float*)&orm.orientation[0] = (float)yaw / 56;
+      //*(float*)&orm.orientation[4] = (float)roll / 56;
+      //*(float*)&orm.orientation[8] = (float)pitch / 56;
 
       *(float*)&loc.location[0] = (float)x*100;
       *(float*)&loc.location[4] = (float)y*100;
       *(float*)&loc.location[8] = (float)z*100;
+      *(float*)&loc.location[12] = (float)pitch / 56;
+      *(float*)&loc.location[16] = (float)yaw / 56;
+      *(float*)&loc.location[20] = (float)roll / 56;
 
       LocationMeasurementChar.writeValue((uint8_t*)&loc, sizeof(loc));
-      OrientationMeasurementChar.writeValue((uint8_t*)&orm, sizeof(orm));
+      // OrientationMeasurementChar.writeValue((uint8_t*)&orm, sizeof(orm));
   
   
-    Serial.print(yaw/56);
-    Serial.print('\t');
-    Serial.print(roll/56);
-    Serial.print('\t');
-    Serial.println(pitch/56);
+//    Serial.print(yaw/56);
+//    Serial.print('\t');
+//    Serial.print(roll/56);
+//    Serial.print('\t');
+//    Serial.println(pitch/56);
   
       // Serial.println(y*100);
     }
