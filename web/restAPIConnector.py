@@ -37,7 +37,7 @@ def get_data_from_web(authed_session):
     response = authed_session.get(firebase_db+link_table+J)
     if response.status_code != 200: print("GET failed")
     resp_data = response.json()
-    
+
     return resp_data['url']
 
 def gen_data_from_data(sensor_data, phone_data, web_link):
@@ -174,6 +174,7 @@ async def main_loop(time_interval=1, max_datasize=10):
         sensor_data = get_data_from_sensor()
         phone_data = get_data_from_phone()
         web_link = get_data_from_web(authed_session) # get latest link from the web
+        print(web_link)
 
         # summary = gen_summary_from_data(sensor_data, phone_data, web_link)
         summary = gen_sample_summary()
