@@ -60,6 +60,7 @@ public class YoutubeFragment extends ServiceFragment {
   private BluetoothGattService mBatteryService;
   private BluetoothGattCharacteristic mBatteryLevelCharacteristic;
   private BluetoothGattCharacteristic mLinkCharacteristic;
+  private BluetoothGattCharacteristic mOriCharacteristic;
 
   public YoutubeFragment() {
     mBatteryLevelCharacteristic =
@@ -82,8 +83,6 @@ public class YoutubeFragment extends ServiceFragment {
                     BluetoothGattCharacteristic.PROPERTY_WRITE, BluetoothGattCharacteristic.PERMISSION_WRITE);
 
     mBatteryService.addCharacteristic(mLinkCharacteristic);
-
-
   }
 
   // Lifecycle callbacks

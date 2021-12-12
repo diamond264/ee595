@@ -185,10 +185,12 @@ public class YoutubeService extends Service implements ServiceFragmentDelegate {
     private float[] accelerometerReading = new float[3];
     private float[] magnetometerReading = new float[3];
     private float[] linAccelerometerReading = new float[3];
+    private float[] gyroReading = new float[3];
 
     private int accReadingNum = 0;
     private int magReadingNum = 0;
     private int linAccReadingNum = 0;
+    private int gyroReadingNum = 0;
 
     private float[] rotationMatrix = new float[9];
     private float[] orientationAngles = new float[3];
@@ -196,6 +198,7 @@ public class YoutubeService extends Service implements ServiceFragmentDelegate {
     private Sensor accSensor;
     private Sensor linAccSensor;
     private Sensor magSensor;
+    private Sensor gyroSensor;
 
     private double vx_add, vy_add, vz_add;
     private double pos_vx, pos_vy, pos_vz;
@@ -224,43 +227,36 @@ public class YoutubeService extends Service implements ServiceFragmentDelegate {
                 }
                 linAccReadingNum += 1;
             }
+            else if(sensorEvent.sensor.getType() == Sensor.TYPE_GYROSCOPE){
+                for(int i=0;i<3;i++){
+                    gyroReading[i] += sensorEvent.values[i];
+                }
+                gyroReadingNum += 1;
+            }
 
-            if(accReadingNum > 5 && magReadingNum > 5 && linAccReadingNum > 5){
+            if(accReadingNum > 10 && magReadingNum > 10 && linAccReadingNum > 10 && gyroReadingNum > 10){
                 for(int i=0;i<3;i++){
                     accelerometerReading[i] /= accReadingNum;
-                    linAccelerometerReading[i] /= linAccReadingNum;
                     magnetometerReading[i] /= magReadingNum;
+                    linAccelerometerReading[i] /= linAccReadingNum;
+                    gyroReading[i] /= gyroReadingNum;
                 }
-                SensorManager.getRotationMatrix(rotationMatrix, null, accelerometerReading, magnetometerReading);
-                SensorManager.getOrientation(rotationMatrix, orientationAngles);
-                BluetoothGattService curService = mCurrentServiceFragment.getBluetoothGattService();
-                BluetoothGattCharacteristic curCharacteristic = curService.getCharacteristic(UUID
-                        .fromString("00002A19-0000-1000-8000-00805f9b34fb"));
-                curCharacteristic.setValue(Arrays.toString(orientationAngles));
-                sendNotificationToDevices(curCharacteristic);
 
+                float gx = gyroReading[0];
+                float gy = gyroReading[1];
+                float gz = gyroReading[2];
+                float ax = linAccelerometerReading[0];
+                float ay = linAccelerometerReading[1];
+                float az = linAccelerometerReading[2];
 
-                for(int i=0;i<3;i++){
-                    accelerometerReading[i] = 0;
-                    linAccelerometerReading[i] = 0;
-                    magnetometerReading[i] = 0;
-                    magReadingNum = 0;
-                    accReadingNum = 0;
-                    linAccReadingNum = 0;
-                }
-            }
-            else if(linAccReadingNum > 10){
                 tCurrent = System.currentTimeMillis();
                 tDelta = tCurrent - tOld;
                 tOld = tCurrent;
 
-                for(int i=0;i<3;i++){
-                    linAccelerometerReading[i] /= linAccReadingNum;
-                }
+                vx_add = 4.9 * ax * tDelta / 1000.0;
+                vy_add = 4.9 * ay * tDelta / 1000.0;
+                vz_add = 4.9 * az * tDelta / 1000.0;
 
-                vx_add = 4.9 * linAccelerometerReading[0] * tDelta / 1000.0;
-                vy_add = 4.9 * linAccelerometerReading[1] * tDelta / 1000.0;
-                vz_add = 4.9 * linAccelerometerReading[2] * tDelta / 1000.0;
 
                 pos_vx = vx + vx_add;
                 pos_vy = vy + vy_add;
@@ -270,7 +266,43 @@ public class YoutubeService extends Service implements ServiceFragmentDelegate {
                 vy = pos_vy + vy_add;
                 vz = pos_vz + vz_add;
 
+                float thres = gx*gx + gy*gy + gz*gz;
+                if(thres < 0.0005){
+                    pos_vx = 0;
+                    pos_vy = 0;
+                    pos_vz = 0;
 
+                    vx = 0;
+                    vy = 0;
+                    vz = 0;
+                }
+
+                x = x + pos_vx * tDelta / 1000.0;
+                y = y + pos_vy * tDelta / 1000.0;
+                z = z + pos_vz * tDelta / 1000.0;
+
+
+                SensorManager.getRotationMatrix(rotationMatrix, null, accelerometerReading, magnetometerReading);
+                SensorManager.getOrientation(rotationMatrix, orientationAngles);
+                BluetoothGattService curService = mCurrentServiceFragment.getBluetoothGattService();
+                BluetoothGattCharacteristic curCharacteristic = curService.getCharacteristic(UUID
+                        .fromString("00002A19-0000-1000-8000-00805f9b34fb"));
+
+                float[] send_arr = new float[]{orientationAngles[0], orientationAngles[1], orientationAngles[2], (float) x*100, (float) y*100, (float) z*100};
+                curCharacteristic.setValue(Arrays.toString(send_arr));
+                sendNotificationToDevices(curCharacteristic);
+
+
+                for(int i=0;i<3;i++){
+                    accelerometerReading[i] = 0;
+                    magnetometerReading[i] = 0;
+                    linAccelerometerReading[i] = 0;
+                    gyroReading[i] = 0;
+                    gyroReadingNum = 0;
+                    magReadingNum = 0;
+                    accReadingNum = 0;
+                    linAccReadingNum = 0;
+                }
             }
 
         }
@@ -326,6 +358,10 @@ public class YoutubeService extends Service implements ServiceFragmentDelegate {
         magSensor = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
         if(linAccSensor != null){
             sensorManager.registerListener(sensorEventListener, magSensor, SensorManager.SENSOR_DELAY_FASTEST);
+        }
+        gyroSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
+        if(gyroSensor != null){
+            sensorManager.registerListener(sensorEventListener, gyroSensor, SensorManager.SENSOR_DELAY_FASTEST);
         }
 
         mGattServer = mBluetoothManager.openGattServer(this, mGattServerCallback);
