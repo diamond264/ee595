@@ -27,6 +27,9 @@ import android.app.Activity;
 
 import com.example.ee595android.ServiceFragment.ServiceFragmentDelegate;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -52,6 +55,7 @@ public class YoutubeService extends Service implements ServiceFragmentDelegate {
     private AdvertiseSettings mAdvSettings;
     private BluetoothLeAdvertiser mAdvertiser;
     private SensorManager sensorManager;
+    private boolean attention = false;
 
     private final AdvertiseCallback mAdvCallback = new AdvertiseCallback(){
         @Override
@@ -105,12 +109,33 @@ public class YoutubeService extends Service implements ServiceFragmentDelegate {
                                                  int offset, byte[] value) {
             super.onCharacteristicWriteRequest(device, requestId, characteristic, preparedWrite,
                     responseNeeded, offset, value);
-            String link = new String(value, StandardCharsets.UTF_8);
-            Log.v(TAG, "Characteristic Write request: " + link);
-            Intent intent = new Intent(getApplicationContext(), MainActivity.class);
-            intent.putExtra("Link", link);
-            intent.setFlags(Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT | Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(intent);
+            String summary = new String(value, StandardCharsets.UTF_8);
+
+            if(summary.equals("")){
+                return;
+            }
+
+            try {
+                JSONObject obj = new JSONObject(summary);
+                boolean new_attention = obj.getString("attention").equals("phone");
+                String link = obj.getString("last_link");
+                if(!attention && new_attention){
+                    attention = true;
+                    Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+                    intent.putExtra("Link", link);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT | Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(intent);
+                }
+                else if(!new_attention && attention){
+                    attention = false;
+                    HTMLvalue.setPlay(false);
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+
+            Log.v(TAG, "Characteristic Write request: " + summary);
+
             int status = mCurrentServiceFragment.writeCharacteristic(characteristic, offset, value);
             if (responseNeeded) {
                 mGattServer.sendResponse(device, requestId, status,

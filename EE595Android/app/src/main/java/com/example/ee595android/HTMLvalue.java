@@ -9,6 +9,7 @@ public class HTMLvalue {
 
     private static String URL;
     private static String Time;
+    private static boolean play = true;
 
     private static final Singleton<HTMLvalue> htmlValue = new Singleton<HTMLvalue>() {
         @Override
@@ -26,6 +27,14 @@ public class HTMLvalue {
         Log.d("SERIAL", input);
         htmlValue.get().URL = input;
 //        URL = input;
+    }
+
+    public static void setPlay(boolean input){
+        htmlValue.get().play = input;
+    }
+
+    public static boolean getPlay(){
+        return htmlValue.get().play;
     }
 
     public static void setTime(String input) {

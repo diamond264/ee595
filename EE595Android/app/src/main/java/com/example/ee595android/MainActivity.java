@@ -111,6 +111,11 @@ public class MainActivity extends AppCompatActivity {
                             "(String(parseInt(document.getElementsByClassName('video-stream html5-main-video')[0].currentTime)));");
                     view.loadUrl("javascript:window.HtmlViewer.setURL" +
                             "(document.URL);");
+                    if(!HTMLvalue.getPlay()){
+                        view.loadUrl("javascript:window.HtmlViewer.stopPlay" +
+                                "(document.getElementsByClassName(‘video-stream html5-main-video’)[0].pause());");
+                        HTMLvalue.setPlay(true);
+                    }
                 }
                 @Override
                 public void onPageFinished(WebView view, String url){
@@ -152,6 +157,12 @@ public class MainActivity extends AppCompatActivity {
         public void setURL(String URL){
             HTMLvalue.setURL(URL);
         }
+
+        @JavascriptInterface
+        public void stopPlay(String URL){
+            Log.d("HTML","STOP");
+        }
+
     }
 
 }

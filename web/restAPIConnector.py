@@ -26,6 +26,7 @@ scopes = [
 
 sensor_data = [0, 0, 0, 0, 0, 0]
 phone_data = (0, 0, 0, '', 0)
+glob_summary = ""
 
 def get_data_from_sensor():
     global sensor_data
@@ -187,6 +188,8 @@ async def main_loop(time_interval=1, max_datasize=10):
         print("")
 
         summary = gen_summary_from_data(sensor_data, phone_data, web_link)
+        global glob_summary
+        glob_summary = summary
         print(summary)
         print("")
         # summary = gen_sample_summary()
@@ -285,13 +288,10 @@ async def run():
         # await client.start_notify(uuid_extend("2A18"), phone_html_callback)
         await client.start_notify(uuid_extend("2A19"), phone_orientation_callback)
 
-        send_flag = True
         # Make the main function loop forever to continuously monitor the data
         while client.is_connected:
-            if send_flag:
-                data = 'https://www.youtube.com/watch?v=axBw_aWCulg'
-                await client.write_gatt_char(uuid_extend("2A20"),bytes(data, 'utf-8'))
-                send_flag = False
+            global glob_summary
+            await client.write_gatt_char(uuid_extend("2A20"),bytes(glob_summary, 'utf-8'))
             await asyncio.sleep(1)
 
 async def runArduino():
