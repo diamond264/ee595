@@ -1,7 +1,7 @@
 console.log("content start");
 
 var cnt = 1;
-var cnt_limit = 10;
+var cnt_limit = 0;
 
 function myLoop() {
 	setTimeout(function() {
@@ -22,7 +22,7 @@ function myLoop() {
 					}
 					video.play();
 				}
-				if (response.distance > 2) {
+				if (response.distance > 43) {
 					scale = 2;
 				}
 
@@ -51,10 +51,10 @@ function myLoop() {
 			});
 		});
 		cnt++;
-		if (cnt < cnt_limit) {
+		if (cnt > cnt_limit) {
 			myLoop();
 		}
-	}, 5000)
+	}, 1000)
 }
 
 myLoop();

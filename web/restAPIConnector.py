@@ -24,13 +24,15 @@ scopes = [
   "https://www.googleapis.com/auth/firebase.database"
 ]
 
-global sensor_data
-global phone_data
+sensor_data = [0, 0, 0, 0, 0, 0]
+phone_data = (0, 0, 0, '', 0)
 
 def get_data_from_sensor():
+    global sensor_data
     return sensor_data
 
 def get_data_from_phone():
+    global phone_data
     return phone_data
 
 def get_data_from_web(authed_session):
@@ -40,44 +42,47 @@ def get_data_from_web(authed_session):
 
     return resp_data['url']
 
-def gen_data_from_data(sensor_data, phone_data, web_link):
+def gen_summary_from_data(sensor_data, phone_data, web_link):
     # sensor, phone default orientation / location -> (0,0,0) / (0,0,0)
     # monitor default location -> (0, -50, 30)
     monitor_loc_x = 0
-    monitor_loc_y = -50
+    monitor_loc_y = -40
     # monitor_loc_z = 30
 
-    sensor_loc_x = sensor_data[0]
-    sensor_loc_y = sensor_data[1]
+    sensor_loc_x = sensor_data[1]
+    sensor_loc_y = sensor_data[0]
     # sensor_loc_z = sensor_data[2]
 
-    sensor_ori_pitch = sensor_data[3]
+    sensor_ori_pitch = sensor_data[5]
     # sensor_ori_yaw = sensor_data[4]
-    sensor_ori_roll = sensor_data[5]
+    sensor_ori_roll = sensor_data[4]
 
-    phone_loc_x = phone_data[0]
-    phone_loc_y = phone_data[1]
+    phone_loc_x = 40 # phone_data[0]
+    phone_loc_y = 0 # phone_data[1]
     # phone_loc_z = phone_data[2]
 
     video_link = phone_data[3]
     link = video_link
 
-    video_time = int(video_link.split('?t=')[1])
+    if video_link != "" and len(video_link.split('?t=')) > 1:
+        video_time = int(video_link.split('?t=')[1])
+    else: video_time = 10000
     web_time = int(web_link.split('?t=')[1])
     if video_time < web_time: link = web_link
 
     sensor_pos = np.array([sensor_loc_x, sensor_loc_y])
     phone_pos = np.array([phone_loc_x, phone_loc_y])
-    dis_sensor_phone = np.linalg.norm(sensor_pos, phone_pos)
+    print(sensor_pos, phone_pos)
+    dis_sensor_phone = np.linalg.norm(sensor_pos - phone_pos)
     xdiff_sensor_phone = np.abs(sensor_loc_x - phone_loc_x)
     degree_sensor_phone = np.arccos(xdiff_sensor_phone / dis_sensor_phone)/np.pi*180
-    if sensor_loc_x > phone_loc_x and sensor_loc_y < phone_loc_y:
-        degree_sensor_phone = 90 - degree_sensor_phone
     if sensor_loc_x > phone_loc_x and sensor_loc_y > phone_loc_y:
+        degree_sensor_phone = 90 - degree_sensor_phone
+    if sensor_loc_x > phone_loc_x and sensor_loc_y < phone_loc_y:
         degree_sensor_phone = 90 + degree_sensor_phone
-    if sensor_loc_x < phone_loc_x and sensor_loc_y < phone_loc_y:
-        degree_sensor_phone = 270 + degree_sensor_phone
     if sensor_loc_x < phone_loc_x and sensor_loc_y > phone_loc_y:
+        degree_sensor_phone = 270 + degree_sensor_phone
+    if sensor_loc_x < phone_loc_x and sensor_loc_y < phone_loc_y:
         degree_sensor_phone = 270 - degree_sensor_phone
 
     pitch_to_phone = np.abs(degree_sensor_phone - sensor_ori_pitch)
@@ -85,27 +90,27 @@ def gen_data_from_data(sensor_data, phone_data, web_link):
 
     sensor_pos = np.array([sensor_loc_x, sensor_loc_y])
     monitor_pos = np.array([monitor_loc_x, monitor_loc_y])
-    dis_sensor_monitor = np.linalg.norm(sensor_pos, monitor_pos)
+    dis_sensor_monitor = np.linalg.norm(sensor_pos - monitor_pos)
     xdiff_sensor_monitor = np.abs(sensor_loc_x - monitor_loc_x)
     degree_sensor_monitor = np.arccos(xdiff_sensor_monitor / dis_sensor_monitor)/np.pi*180
-    if sensor_loc_x > monitor_loc_x and sensor_loc_y < monitor_loc_y:
-        degree_sensor_monitor = 90 - degree_sensor_monitor
     if sensor_loc_x > monitor_loc_x and sensor_loc_y > monitor_loc_y:
+        degree_sensor_monitor = 90 - degree_sensor_monitor
+    if sensor_loc_x > monitor_loc_x and sensor_loc_y < monitor_loc_y:
         degree_sensor_monitor = 90 + degree_sensor_monitor
-    if sensor_loc_x < monitor_loc_x and sensor_loc_y < monitor_loc_y:
-        degree_sensor_monitor = 270 + degree_sensor_monitor
     if sensor_loc_x < monitor_loc_x and sensor_loc_y > monitor_loc_y:
+        degree_sensor_monitor = 270 + degree_sensor_monitor
+    if sensor_loc_x < monitor_loc_x and sensor_loc_y < monitor_loc_y:
         degree_sensor_monitor = 270 - degree_sensor_monitor
 
     pitch_to_monitor = np.abs(degree_sensor_monitor - sensor_ori_pitch)
     if pitch_to_monitor > 180: pitch_to_monitor = 360 - pitch_to_monitor
 
     direction = 'up'
-    if sensor_ori_roll > 45: direction = 'left'
-    if sensor_ori_roll < -45: direction = 'right'
+    if sensor_ori_pitch > 65: direction = 'left'
+    if sensor_ori_pitch < -65: direction = 'right'
 
     summary = {}
-    if pitch_to_monitor > pitch_to_phone:
+    if sensor_ori_roll < -70: #pitch_to_monitor >= pitch_to_phone:
         summary = {
             "attention": "phone",
             "distance": dis_sensor_phone,
@@ -171,13 +176,20 @@ async def main_loop(time_interval=1, max_datasize=10):
     authed_session = AuthorizedSession(credentials)
 
     while True:
-        sensor_data = get_data_from_sensor()
-        phone_data = get_data_from_phone()
+        sensor_data_ = get_data_from_sensor()
+        phone_data_ = get_data_from_phone()
         web_link = get_data_from_web(authed_session) # get latest link from the web
-        print(web_link)
+        # print(web_link)
+        print("phone data")
+        print(phone_data_)
+        print("sensor data")
+        print(sensor_data_)
+        print("")
 
-        # summary = gen_summary_from_data(sensor_data, phone_data, web_link)
-        summary = gen_sample_summary()
+        summary = gen_summary_from_data(sensor_data, phone_data, web_link)
+        print(summary)
+        print("")
+        # summary = gen_sample_summary()
 
         response = authed_session.get(firebase_db+sdata_table+J)
         if response.status_code != 200: print("GET failed")
@@ -197,7 +209,7 @@ async def main_loop(time_interval=1, max_datasize=10):
 
         send_data_to_phone(summary)
         
-        print(resp_data)
+        # print(resp_data)
         await asyncio.sleep(time_interval)
 
 
@@ -221,10 +233,8 @@ def phone_orientation_callback(sender, data):
     numbers = [float(i.strip()) for i in numbers]
 
     uri = data[1].split(' ')
-    print('URI : '+ uri[0])
-    print('TIME : '+ uri[1])
-
-    phone_data = (numbers[3], numbers[4], numbers[5], uri[0], float(uri[1]))
+    global phone_data
+    phone_data = (numbers[3], numbers[4], numbers[5], uri[0], float(uri[1]) if uri[1] else -1)
     # print("Received data in bytearray: {}".format(data))
     # print("Received data in float: {}".format(struct.unpack('f', data[1:5])[0])) # Field struct is 5-byte long, where the first byte is the "flag" field.
 
@@ -244,6 +254,7 @@ def arduino_location_callback(sender, data):
     yaw = struct.unpack('f', data[17:21])[0]
     roll = struct.unpack('f', data[21:25])[0]
 
+    global sensor_data
     sensor_data = [x, y, z, pitch, yaw, roll]
 
     #print('arduino location : ', end = "")
@@ -255,7 +266,6 @@ async def run():
     while(not found_flag):
         devices = await BleakScanner.discover()
         for d in devices:
-            print(d)
             if "EE595B_Phone" in d.name:
                 client_device = d
                 print("Found!!  ")
@@ -290,7 +300,6 @@ async def runArduino():
     while(not found_flag):
         devices = await BleakScanner.discover()
         for d in devices:
-            print(d)
             if "EE595B_Arduino" in d.name:
                 client_device = d
                 print("Found!!  ")
@@ -315,7 +324,5 @@ async def runArduino():
 
 
 #tasks = asyncio.gather(runArduino())
-sensor_data = []
-phone_data = []
 tasks = asyncio.gather(run(), runArduino(), main_loop())
 loop.run_until_complete(tasks)

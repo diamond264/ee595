@@ -73,7 +73,7 @@ chrome.runtime.onMessage.addListener(
 
 						for (var i=0; i<keys.length; i++) {
 							var key = keys[i];
-							if (max_ts > data[key]['timestamp']) {
+							if (max_ts < data[key]['timestamp']) {
 								max_key = key;
 								max_ts = data[key]['timestamp'];
 							}
