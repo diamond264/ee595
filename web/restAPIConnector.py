@@ -58,6 +58,7 @@ def gen_summary_from_data(sensor_data, phone_data, web_link):
     # sensor_ori_yaw = sensor_data[4]
     sensor_ori_roll = sensor_data[4]
 
+    ### set phone location manually
     phone_loc_x = 40 # phone_data[0]
     phone_loc_y = 0 # phone_data[1]
     # phone_loc_z = phone_data[2]
@@ -112,7 +113,8 @@ def gen_summary_from_data(sensor_data, phone_data, web_link):
     if sensor_ori_pitch < -65: direction = 'right'
 
     summary = {}
-    if sensor_ori_roll < -70: #pitch_to_monitor >= pitch_to_phone:
+    # sensor_ori_roll < -70:
+    if pitch_to_monitor >= pitch_to_phone:
         summary = {
             "attention": "phone",
             "distance": dis_sensor_phone,
