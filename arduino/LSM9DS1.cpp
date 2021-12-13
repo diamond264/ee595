@@ -74,8 +74,10 @@ int LSM9DS1Class::begin()
 
   writeRegister(LSM9DS1_ADDRESS, LSM9DS1_CTRL_REG1_G, 0xd8); // 119 Hz, 2000 dps, 16 Hz BW 0x78 -> 0xd8 -> dd
   writeRegister(LSM9DS1_ADDRESS, LSM9DS1_CTRL_REG6_XL, 0xc0); // 119 Hz, 4G 0x70 -> 0xc0
-  writeRegister(LSM9DS1_ADDRESS, LSM9DS1_CTRL_REG7_XL, 0x80);
-  writeRegister(LSM9DS1_ADDRESS, LSM9DS1_CTRL_REG5_XL, 0x78);
+  writeRegister(LSM9DS1_ADDRESS, LSM9DS1_CTRL_REG7_XL, 0x00);
+  writeRegister(LSM9DS1_ADDRESS, LSM9DS1_CTRL_REG5_XL, 0x38);
+
+
 
   writeRegister(LSM9DS1_ADDRESS_M, LSM9DS1_CTRL_REG1_M, 0xb4); // Temperature compensation enable, medium performance, 20 Hz
   writeRegister(LSM9DS1_ADDRESS_M, LSM9DS1_CTRL_REG2_M, 0x00); // 4 Gauss

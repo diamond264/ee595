@@ -128,9 +128,9 @@ void loop() {
         continue;
       }
 
-      gx = gx - 2.5;
-      gy = gy + 13.25;
-      gz = gz - 0.75;
+      gx = gx - 2.8;
+      gy = gy + 16.5;
+      gz = gz - 0.8;
       
       ax = -ax;
       gx = -gx;
