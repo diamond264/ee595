@@ -30,7 +30,6 @@ void blePeripheralDisconnectHandler(BLEDevice central) {
 unsigned long microTime_old, microTime, microTime_delta;
 
 float gx, gy, gz;
-float rotate_x, rotate_y, rotate_z;
 float vx, vy, vz;
 float vx_add, vy_add, vz_add;
 float pos_vx, pos_vy, pos_vz;
@@ -39,10 +38,15 @@ int n;
 float ax, ay, az;
 float ax_offset, ay_offset, az_offset;
 float ax_temp, ay_temp, az_temp;
-const float rotate_coeff = 1000000.0 * (2.0*PI/360.0);
+const float r2d = 180.0 / PI;
+const float d2r = PI / 180.0;
 
 float accAngleX = 0, accAngleY = 0, gyroAngleX = 0, gyroAngleY = 0, gyroAngleZ = 0;
 float roll = 0, pitch = 0, yaw = 0; 
+float p_roll = 0, p_pitch = 0, p_yaw = 0;
+float e_roll = 0, e_pitch = 0, e_yaw = 0;
+float p_ax = 0, p_ay = 0, p_az = 0;
+float e_ax = 0, e_ay = 0, e_az = 0;
 
 bool start_flag;
 
@@ -88,9 +92,6 @@ void setup() {
 
 
   // Initialize Variables
-  rotate_x = 0;
-  rotate_y = 0;
-  rotate_z = 0;
   vx = 0;
   vy = 0;
   vz = 0;
@@ -115,15 +116,11 @@ void loop() {
       digitalWrite(24, LOW);
       
       n = IMU.accelerationAvailable();
-      while(n < 10){
-        n = IMU.accelerationAvailable();
-      }
-      
+     
       microTime = micros();
       microTime_delta = microTime - microTime_old;
       microTime_old = microTime;
 
-      
       IMU.readAccelerationGyroMultiple(ax, ay, az, gx, gy, gz, n);
 
       if(start_flag){
@@ -146,23 +143,30 @@ void loop() {
           gz = 0;
         }
         
-      yaw =  yaw + gz * microTime_delta / rotate_coeff;
-      roll = roll + gx * microTime_delta / rotate_coeff;
-      pitch = pitch + gy * microTime_delta / rotate_coeff;
+      yaw =  yaw + (gz * microTime_delta / 1000000.0) * d2r;
+      roll = roll + (gx * microTime_delta / 1000000.0) * d2r;
+      pitch = pitch + (gy * microTime_delta / 1000000.0) * d2r;
 
 //      pitch, yaw, roll
 //      float rotation_matrix[3][3] = {{cos(pitch)*cos(yaw), cos(pitch)*sin(yaw)*sin(roll)-sin(pitch)*cos(roll), cos(pitch)*sin(yaw)*cos(roll) + sin(pitch)*sin(roll)},
 //                                      {sin(pitch)*cos(yaw), sin(pitch)*sin(yaw)*sin(roll)-cos(pitch)*cos(roll), sin(pitch)*sin(yaw)*cos(roll) + cos(pitch)*sin(roll)},
 //                                         {-sin(yaw), cos(yaw)*sin(roll), cos(yaw)*cos(roll)}};
 
-     float d2r = PI/180.0;
-     float rotated_gravity[3] = {-sin(pitch*d2r/56), cos(pitch*d2r/56)*sin(roll*d2r/56), cos(pitch*d2r/56)*cos(roll*d2r/56)};
+    e_pitch = (pitch + p_pitch)/2.0;
+    e_roll = (roll + p_roll) / 2.0;
+    e_yaw = (yaw + p_yaw)/2.0;
+    
+     float e_rotated_gravity[3] = {-sin(e_pitch), cos(e_pitch)*sin(e_roll), cos(e_pitch)*cos(e_roll)};
 
-     ax -= rotated_gravity[0];
-     ay -= rotated_gravity[1];
-     az -= rotated_gravity[2];
+     p_pitch = pitch;
+     p_roll = roll;
+     p_yaw = yaw;
+     
+     ax -= e_rotated_gravity[0];
+     ay -= e_rotated_gravity[1];
+     az -= e_rotated_gravity[2];
 
-     if (thres < 200)
+     if (thres < 100)
         { 
           ax_offset = ax;
           ay_offset = ay;
@@ -173,9 +177,17 @@ void loop() {
         ay -= ay_offset;
         az -= az_offset;
 
-      vx_add = 4.9 * ax * microTime_delta / 1000000.0;
-      vy_add = 4.9 * ay * microTime_delta / 1000000.0;
-      vz_add = 4.9 * az * microTime_delta / 1000000.0;
+        e_ax = p_ax + (ax-p_ax)/2.0;
+        e_ay = p_ay + (ay-p_ay)/2.0;
+        e_az = p_az + (az-p_az)/2.0;
+
+        p_ax = ax;
+        p_ay = ay;
+        p_az = az;
+
+      vx_add = 4.9 * e_ax * microTime_delta / 1000000.0;
+      vy_add = 4.9 * e_ay * microTime_delta / 1000000.0;
+      vz_add = 4.9 * e_az * microTime_delta / 1000000.0;
     
       pos_vx = vx + vx_add;
       pos_vy = vy + vy_add;
@@ -185,7 +197,7 @@ void loop() {
       vy = pos_vy + vy_add;
       vz = pos_vz + vz_add;
 
-      if (thres < 200)
+      if (thres < 100)
         { 
           pos_vx = 0;
           pos_vy = 0;
@@ -203,18 +215,18 @@ void loop() {
       *(float*)&loc.location[0] = (float)x*100;
       *(float*)&loc.location[4] = (float)y*100;
       *(float*)&loc.location[8] = (float)z*100;
-      *(float*)&loc.location[12] = (float)pitch / 56;
-      *(float*)&loc.location[16] = (float)yaw / 56;
-      *(float*)&loc.location[20] = (float)roll / 56;
+      *(float*)&loc.location[12] = (float)pitch * r2d;
+      *(float*)&loc.location[16] = (float)yaw * r2d;
+      *(float*)&loc.location[20] = (float)roll * r2d;
 
       LocationMeasurementChar.writeValue((uint8_t*)&loc, sizeof(loc));
   
   
-//    Serial.print(yaw/56);
+//    Serial.print(yaw * r2d);
 //    Serial.print('\t');
-//    Serial.print(roll/56);
+//    Serial.print(roll * r2d);
 //    Serial.print('\t');
-//    Serial.print(pitch/56);
+//    Serial.print(pitch * r2d);
 //    Serial.print('\t');
 //    Serial.print(ax);
 //    Serial.print('\t');
