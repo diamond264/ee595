@@ -136,7 +136,7 @@ void loop() {
       gx = -gx;
     
       float thres = gx*gx + gy*gy + gz*gz;
-      if (thres < 200)
+      if (thres < 100)
         { 
           gy = 0;
           gx = 0;
@@ -234,11 +234,11 @@ void loop() {
 //    Serial.print('\t');
 //    Serial.println(az);
 
-    Serial.print(x*100);
-    Serial.print('\t');
-    Serial.print(y*100);
-    Serial.print('\t');
-    Serial.println(z*100);
+//    Serial.print(x*100);
+//    Serial.print('\t');
+//    Serial.print(y*100);
+//    Serial.print('\t');
+//    Serial.println(z*100);
     }
   }else {
     digitalWrite(22, LOW);
