@@ -1,4 +1,8 @@
 # 1. Setting physical devices for use
-The 
-# 2. 
-# 3. Executing python script
+In the in-the-wild environment, the trajectory inferred through the IMU sensor value is very unstable. We assume that the positions of the phone and monitor are fixed in order to minimize the instability. In the current code, it is assumed that the monitor is positioned 40cm in front of the Arduino, and the phone is positioned 40cm to the right from the Arduino. Before executing the Python script, all devices should be fixed in the mentioned locations.
+# 2. Firebase token
+We use Firebase for communication between Python scripts and Chrome extension scripts. We placed the api key in the directory and implemented the code to automatically generate the api token in the script. The api key will not be destroyed until the end of the course, but if there is a security issue with the firebase api key or the key automatically expires, communication between the chrome extension and the python script becomes impossible. There is a part about the firebase setting in the Python script and chrome extension script, so please find and fix it if necessary.
+# 3. Installing & executing chrome extension script
+To install our chrome extension script in your chrome, please go to chrome://extensions/. Click on Load Unpacked and select web/chrome_extension folder. Then it will be installed as a local extension in your chrome. Enable it by switching the button in the installed extension box. If the current page of your chrome starts with "https://www.youtube.com/watch?", the script will be automatically executed. *If the script does not work, please refresh your link.*
+# 4. Executing python script
+Our python script is implemented assumming Python 3.9. To execute our script, first install all required pip packages in requirements.txt. By executing web/restAPIConnector.py, you can execute the python client which communicates with the sensors and generates user context summary based on the transmitted trajectory data.
