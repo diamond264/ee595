@@ -54,9 +54,9 @@ def gen_summary_from_data(sensor_data, phone_data, web_link):
     sensor_loc_y = sensor_data[0]
     # sensor_loc_z = sensor_data[2]
 
-    sensor_ori_pitch = sensor_data[5]
+    sensor_ori_roll = sensor_data[5]
     # sensor_ori_yaw = sensor_data[4]
-    sensor_ori_roll = sensor_data[4]
+    sensor_ori_pitch = sensor_data[4]
 
     ### set phone location manually
     phone_loc_x = 40 # phone_data[0]
@@ -109,8 +109,8 @@ def gen_summary_from_data(sensor_data, phone_data, web_link):
     if pitch_to_monitor > 180: pitch_to_monitor = 360 - pitch_to_monitor
 
     direction = 'up'
-    if sensor_ori_pitch > 65: direction = 'left'
-    if sensor_ori_pitch < -65: direction = 'right'
+    if sensor_ori_roll > 65: direction = 'left'
+    if sensor_ori_roll < -65: direction = 'right'
 
     summary = {}
     # sensor_ori_roll < -70:
