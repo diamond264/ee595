@@ -50,6 +50,11 @@ float e_ax = 0, e_ay = 0, e_az = 0;
 
 bool start_flag;
 
+/**** calibration ****/
+float gyro_x_const = 0;
+float gyro_y_const = 0;
+float gyro_z_const = 0;
+
 void setup() {
   pinMode(22, OUTPUT); // RED
   pinMode(23, OUTPUT); // GREEN
@@ -128,9 +133,9 @@ void loop() {
         continue;
       }
 
-      gx = gx - 2.8;
-      gy = gy + 16.5;
-      gz = gz - 0.8;
+      gx = gx - gyro_x_const;
+      gy = gy - gyro_y_const;
+      gz = gz - gyro_z_const;
       
       ax = -ax;
       gx = -gx;
