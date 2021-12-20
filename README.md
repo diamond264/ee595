@@ -27,6 +27,7 @@ There are codes for arduino, smartphone, and the laptop.
 ##2.1 Arduino code
 Please use the same LSM9DS1 library file mentioned at 1.1.
 And the calibration procedure for the mobile service is same with 1.2.
+Please calibrate the gyroscope constants in final.ino
 
 ##2.2 Android code
 APK for android code is /mobile service/apk-release.apk.
